@@ -5,7 +5,7 @@ import SettingsForm  from "@/components/SettingsForm";
 
 const OwnerSettingsPage = () => {
   const { data: authUser, isLoading} = useGetAuthUserQuery();
-  console.log("authUser", authUser);
+  // console.log("authUser settings", authUser);
   const [updateOwner] = useUpdateOwnerSettingsMutation();
 
   if (isLoading) return (
@@ -18,9 +18,9 @@ const OwnerSettingsPage = () => {
   );
 
   const initialData = {
-    name: "frukundo",
-    email: "testingEmail@gmail.com",
-    phoneNumber: "0123456789",
+    name: authUser?.userInfo.name || "testingName",
+    email: authUser?.userInfo.email || "testingEmail@gmail.com",
+    phoneNumber: authUser?.userInfo.phoneNumber || "0123456789",
   };
   const handleSubmit = async (data: typeof initialData) => {
     await updateOwner({
