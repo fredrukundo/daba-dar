@@ -22,6 +22,10 @@ const ApplicationCard = ({
   const contactPerson =
     userType === "owner" ? application.investor : application.owner;
 
+    console.log("ApplicationCard Props:", {
+    contactPerson,
+  });
+
   return (
     <div className="border rounded-xl overflow-hidden shadow-sm bg-white mb-4">
       <div className="flex flex-col lg:flex-row  items-start lg:items-center justify-between px-6 md:px-4 py-6 gap-6 lg:gap-4">
@@ -42,7 +46,9 @@ const ApplicationCard = ({
                 {application.property.name}
               </h2>
               <div className="flex items-center mb-2">
-                <MapPin className="w-5 h-5 mr-1" />
+                <button aria-label="View Property on Map">
+                  <MapPin className="w-5 h-5 mr-1" />
+                </button>
                 <span>{`${application.property.location.city}, ${application.property.location.country}`}</span>
               </div>
             </div>
@@ -98,7 +104,7 @@ const ApplicationCard = ({
             <div>
               <Image
                 src="/landing-i1.png"
-                alt={contactPerson.name}
+                alt={`Profile image of ${contactPerson.name}`}
                 width={40}
                 height={40}
                 className="rounded-full mr-2 min-w-[40px] min-h-[40px]"
