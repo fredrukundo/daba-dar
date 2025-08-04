@@ -17,10 +17,10 @@ const InvestorSettingsPage = () => {
     </div>
   );
 
-  const initialData = {
-    name: "duke fred",
-    email: "dukefred@gmail.com",
-    phoneNumber: "0123456789",
+ const initialData = {
+    name: authUser?.userInfo.name || "testingName",
+    email: authUser?.userInfo.email || "testingEmail@gmail.com",
+    phoneNumber: authUser?.userInfo.phoneNumber || "not provided",
   };
   const handleSubmit = async (data: typeof initialData) => {
     await updateInvestor({
