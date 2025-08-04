@@ -20,7 +20,7 @@ const OwnerSettingsPage = () => {
   const initialData = {
     name: authUser?.userInfo.name || "testingName",
     email: authUser?.userInfo.email || "testingEmail@gmail.com",
-    phoneNumber: authUser?.userInfo.phoneNumber || "0123456789",
+    phoneNumber: authUser?.userInfo.phoneNumber || "not provided",
   };
   const handleSubmit = async (data: typeof initialData) => {
     await updateOwner({
