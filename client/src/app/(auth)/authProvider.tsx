@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect } from 'react';
 import { Amplify } from 'aws-amplify';
 import {
@@ -160,6 +161,7 @@ const components = {
     if (!isAuthPage && !isDashboardPage) {
       return <>{children}</>;
     }
+    console.log("user", user);
   
     return (
       <div className="h-full">
