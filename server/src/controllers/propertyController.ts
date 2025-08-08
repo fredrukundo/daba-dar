@@ -190,6 +190,108 @@ export const getProperty = async (
   }
 };
 
+// export const createProperty = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const files = req.files as Express.Multer.File[];
+//     const {
+//       address,
+//       city,
+//       state,
+//       country,
+//       postalCode,
+//       managerCognitoId,
+//       ...propertyData
+//     } = req.body;
+
+//     // const photoUrls = await Promise.all(
+//     //   files.map(async (file) => {
+//     //     const uploadParams = {
+//     //       Bucket: process.env.S3_BUCKET_NAME!,
+//     //       Key: `properties/${Date.now()}-${file.originalname}`,
+//     //       Body: file.buffer,
+//     //       ContentType: file.mimetype,
+//     //     };
+
+//     //     const uploadResult = await new Upload({
+//     //       client: s3Client,
+//     //       params: uploadParams,
+//     //     }).done();
+
+//     //     return uploadResult.Location;
+//     //   })
+//     // );
+
+//     const geocodingUrl = `https://nominatim.openstreetmap.org/search?${new URLSearchParams(
+//       {
+//         street: address,
+//         city,
+//         country,
+//         postalcode: postalCode,
+//         format: "json",
+//         limit: "1",
+//       }
+//     ).toString()}`;
+//     const geocodingResponse = await axios.get(geocodingUrl, {
+//       headers: {
+//         "User-Agent": "Dabacities (dukefred9@gmail.com",
+//       },
+//     });
+//     const [longitude, latitude] =
+//       geocodingResponse.data[0]?.lon && geocodingResponse.data[0]?.lat
+//         ? [
+//             parseFloat(geocodingResponse.data[0]?.lon),
+//             parseFloat(geocodingResponse.data[0]?.lat),
+//           ]
+//         : [0, 0];
+
+//     // create location
+//     const [location] = await prisma.$queryRaw<Location[]>`
+//       INSERT INTO "Location" (address, city, state, country, "postalCode", coordinates)
+//       VALUES (${address}, ${city}, ${state}, ${country}, ${postalCode}, ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326))
+//       RETURNING id, address, city, state, country, "postalCode", ST_AsText(coordinates) as coordinates;
+//     `;
+
+//     // create property
+//     const newProperty = await prisma.property.create({
+//       data: {
+//         ...propertyData,
+//         // photoUrls,
+//         locationId: location.id,
+//         managerCognitoId,
+//         amenities:
+//           typeof propertyData.amenities === "string"
+//             ? propertyData.amenities.split(",")
+//             : [],
+//         highlights:
+//           typeof propertyData.highlights === "string"
+//             ? propertyData.highlights.split(",")
+//             : [],
+//         isPetsAllowed: propertyData.isPetsAllowed === "true",
+//         isParkingIncluded: propertyData.isParkingIncluded === "true",
+//         pricePerMonth: parseFloat(propertyData.pricePerMonth),
+//         securityDeposit: parseFloat(propertyData.securityDeposit),
+//         applicationFee: parseFloat(propertyData.applicationFee),
+//         beds: parseInt(propertyData.beds),
+//         baths: parseFloat(propertyData.baths),
+//         squareFeet: parseInt(propertyData.squareFeet),
+//       },
+//       include: {
+//         location: true,
+//         owner: true,
+//       },
+//     });
+
+//     res.status(201).json(newProperty);
+//   } catch (err: any) {
+//     res
+//       .status(500)
+//       .json({ message: `Error creating property: ${err.message}` });
+//   }
+// };
+
 export const createProperty = async (
   req: Request,
   res: Response
@@ -224,28 +326,56 @@ export const createProperty = async (
     //   })
     // );
 
-    const geocodingUrl = `https://nominatim.openstreetmap.org/search?${new URLSearchParams(
-      {
+    let latitude = 0;
+    let longitude = 0;
+
+    try {
+      // Step 1: Full address geocoding
+      const fullAddressParams = new URLSearchParams({
         street: address,
         city,
         country,
         postalcode: postalCode,
         format: "json",
         limit: "1",
+      });
+
+      let geoRes = await axios.get(
+        `https://nominatim.openstreetmap.org/search?${fullAddressParams.toString()}`,
+        {
+          headers: {
+            "User-Agent": "Dabacities (dukefred9@gmail.com)",
+          },
+        }
+      );
+
+      // Step 2: If full address fails, fallback to city + country
+      if (geoRes.data.length === 0) {
+        const fallbackParams = new URLSearchParams({
+          city,
+          country,
+          format: "json",
+          limit: "1",
+        });
+
+        geoRes = await axios.get(
+          `https://nominatim.openstreetmap.org/search?${fallbackParams.toString()}`,
+          {
+            headers: {
+              "User-Agent": "Dabacities (dukefred9@gmail.com)",
+            },
+          }
+        );
       }
-    ).toString()}`;
-    const geocodingResponse = await axios.get(geocodingUrl, {
-      headers: {
-        "User-Agent": "Dabacities (dukefred9@gmail.com",
-      },
-    });
-    const [longitude, latitude] =
-      geocodingResponse.data[0]?.lon && geocodingResponse.data[0]?.lat
-        ? [
-            parseFloat(geocodingResponse.data[0]?.lon),
-            parseFloat(geocodingResponse.data[0]?.lat),
-          ]
-        : [0, 0];
+
+      // Step 3: Set coordinates if found
+      if (geoRes.data.length > 0) {
+        longitude = parseFloat(geoRes.data[0].lon);
+        latitude = parseFloat(geoRes.data[0].lat);
+      }
+    } catch (error: any) {
+      console.error("Geocoding error:", error.message);
+    }
 
     // create location
     const [location] = await prisma.$queryRaw<Location[]>`
