@@ -11,14 +11,16 @@ import ReportsSection from '@/components/UIs/Report/ReportSection';
 import ContactFormSection from '@/components/UIs/ContactUs/ContactUs';
 import SFooterSection from '@/components/UIs/SemFoorter/SemiFooter';
 import LegalFooter from '@/components/UIs/LegalFooter/LegalFooter';
-
+import BeforeAfterSection from '@/components/UIs/BeforeAfterSection/Before_After';
 
 
 const Homepage = () => {
     return (
         <div>
-            <HeroSection />
-            <IntroSection />
+            
+            { /*<HeroSection /> */}
+            <BeforeAfterSection />
+           {/*} <IntroSection />
             <StatsSection />
             <FeatureSection />
             <JoinSection />
@@ -27,7 +29,7 @@ const Homepage = () => {
             <ReportsSection />
             <ContactFormSection />
             <SFooterSection />
-            <LegalFooter />
+            <LegalFooter /> */}
         </div>
     );
 };
