@@ -1,9 +1,10 @@
 'use client';
 import { Bath, Bed, Heart, House, Star } from "lucide-react";
 import Image from "next/image";
+import { NAVBAR_HEIGHT } from "@/lib/constants";
 import Link from "next/link";
-import React, { useState } from "react";
-import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider'; // Import the compare slider
+import React, { useState , useEffect} from "react";
+import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider'; //Import the compare slider
 
 const Before_After = ({
   isFavorite,
@@ -67,64 +68,256 @@ const Before_After = ({
       baths: 3,
       squareFeet: 2500,
     },
+    {
+      imgSrc: "/images/p3.jpg",
+      imgSrcBefore: "/images/p1.jpg",
+      imgSrcAfter: "/images/p2.jpg",
+      name: "Luxury Villa with Ocean View",
+      location: "101 Ocean Ave, Beachside",
+      city: "Coastal City",
+      price: 3000,
+      rating: 5.0,
+      reviews: 200,
+      beds: 4,
+      baths: 3,
+      squareFeet: 2500,
+    },
+    {
+      imgSrc: "/images/p1.jpg",
+      imgSrcBefore: "/images/p1.jpg",
+      imgSrcAfter: "/images/p3.jpg",
+      name: "Beautiful House in the City",
+      location: "123 Main St, Downtown",
+      city: "City Name",
+      price: 1500,
+      rating: 4.5,
+      reviews: 120,
+      beds: 3,
+      baths: 2,
+      squareFeet: 2000,
+    },
   ];
+  const propertiesPerPage = 4;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<"price" | "rating" | "none">("none");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [filters, setFilters] = useState({
+    location: "",
+    city: "",
+    minPrice: 0, // Prix minimum par défaut
+    maxPrice: 5000, // Prix maximum par défaut
+    ratingRange: [0, 5], // Plage de notation de 0 à 5 par défaut
+  });
+
+  // Utilisation d'`useEffect` pour appliquer immédiatement les filtres et tri.
+  useEffect(() => {
+    setCurrentPage(1); // Réinitialiser la page à la première page chaque fois que les filtres sont modifiés.
+  }, [filters, sortBy, sortOrder]);
+
+  // Filtrer les propriétés en fonction des critères sélectionnés
+  const filteredProperties = properties.filter((property) => {
+    const matchesLocation = property.location.toLowerCase().includes(filters.location.toLowerCase());
+    const matchesCity = property.city.toLowerCase().includes(filters.city.toLowerCase());
+    const matchesPrice =
+      property.price >= filters.minPrice && property.price <= filters.maxPrice;
+    const matchesRating =
+      property.rating >= filters.ratingRange[0] && property.rating <= filters.ratingRange[1];
+    return matchesLocation && matchesCity && matchesPrice && matchesRating;
+  });
+
+  // Calculer l'index de début et de fin des propriétés à afficher
+  const indexOfLastProperty = currentPage * propertiesPerPage;
+  const indexOfFirstProperty = indexOfLastProperty - propertiesPerPage;
+
+  const currentProperties = sortBy === "none"
+    ? filteredProperties.slice(indexOfFirstProperty, indexOfLastProperty)
+    : filteredProperties
+        .sort((a, b) => {
+          if (sortBy === "price") {
+            return sortOrder === "asc" ? a.price - b.price : b.price - a.price;
+          } else {
+            return sortOrder === "asc" ? a.rating - b.rating : b.rating - a.rating;
+          }
+        })
+        .slice(indexOfFirstProperty, indexOfLastProperty);
+
+  // Fonction pour passer à la page suivante
+  const nextPage = () => {
+    if (indexOfLastProperty < filteredProperties.length) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Fonction pour revenir à la page précédente
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Fonction pour aller à une page spécifique
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Total des pages
+  const totalPages = Math.ceil(filteredProperties.length / propertiesPerPage);
+
+  // Créer une gamme de numéros de pages
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
+
+  // Fonction pour changer l'ordre de tri
+  const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value;
+    const [by, order] = value.split("-");
+
+    setSortBy(by as "price" | "rating" | "none");
+    setSortOrder(order as "asc" | "desc");
+  };
+
+  // Fonction pour gérer les filtres
+  const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = event.target;
+
+    if (name === "minPrice" || name === "maxPrice") {
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [name]: parseInt(value, 10),
+      }));
+    } else {
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        [name]: value,
+      }));
+    }
+  };
+
+  // Fonction pour réinitialiser tous les filtres à leurs valeurs par défaut
+  const resetFilters = () => {
+    setFilters({
+      location: "",
+      city: "",
+      minPrice: 0,
+      maxPrice: 5000,
+      ratingRange: [0, 5],
+    });
+  };
 
   return (
-    <section className="container mx-auto px-4 py-8" id="before-after-section" >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {properties.map((property, index) => (
+    <section className="container mx-auto px-4 py-8" id="before-after-section" style={{ paddingTop: `${NAVBAR_HEIGHT}px` }}>
+      {/* Filtres dynamiques avec prix min et max */}
+      <div className="flex flex-wrap justify-center mb-4 gap-4">
+        <div className="flex items-center">
+          <label htmlFor="location" className="mr-2">Location</label>
+          <input
+            type="text"
+            id="location"
+            name="location"
+            value={filters.location}
+            onChange={handleFilterChange}
+            className="px-4 py-2 border rounded-lg bg-white text-gray-600"
+            placeholder="Enter location"
+          />
+        </div>
+        <div className="flex items-center">
+          <label htmlFor="city" className="mr-2">City</label>
+          <input
+            type="text"
+            id="city"
+            name="city"
+            value={filters.city}
+            onChange={handleFilterChange}
+            className="px-4 py-2 border rounded-lg bg-white text-gray-600"
+            placeholder="Enter city"
+          />
+        </div>
+        <div className="flex items-center">
+          <label htmlFor="minPrice" className="mr-2">Min Price</label>
+          <input
+            type="number"
+            id="minPrice"
+            name="minPrice"
+            value={filters.minPrice}
+            onChange={handleFilterChange}
+            className="px-4 py-2 border rounded-lg bg-white text-gray-600"
+            placeholder="Min"
+          />
+        </div>
+        <div className="flex items-center">
+          <label htmlFor="maxPrice" className="mr-2">Max Price</label>
+          <input
+            type="number"
+            id="maxPrice"
+            name="maxPrice"
+            value={filters.maxPrice}
+            onChange={handleFilterChange}
+            className="px-4 py-2 border rounded-lg bg-white text-gray-600"
+            placeholder="Max"
+          />
+        </div>
+      </div>
+
+      {/* Section de tri alignée à droite */}
+      <div className="flex justify-center mb-4">
+        <label htmlFor="sort-options" className="mr-2">Sort By:</label>
+        <select
+          id="sort-options"
+          onChange={handleSortChange}
+          className="px-4 py-2 border rounded-lg bg-white text-gray-600"
+        >
+          <option value="none-asc">Default</option>
+          <option value="price-asc">Price Low To High</option>
+          <option value="price-desc">Price High To Low</option>
+          <option value="rating-asc">Rating Low To High</option>
+          <option value="rating-desc">Rating High To Low</option>
+        </select>
+      </div>
+
+      {/* Bouton Reset */}
+      <div className="flex justify-center mb-4">
+        <button
+          onClick={resetFilters}
+          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+        >
+          Reset Filters
+        </button>
+      </div>
+
+      {/* Affichage des propriétés en 4 colonnes */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {currentProperties.map((property, index) => (
           <div key={index} className="bg-white rounded-xl overflow-hidden shadow-lg w-full mb-5 relative">
             <div className="relative">
               <div className="w-full h-48 relative">
-                {/* For the first property, display the comparison slider */}
-                {index === 0 ? (
-                  <div className="relative">
-                    <ReactCompareSlider
-                      boundsPadding={0}
-                      clip="both"
-                      itemOne={
-                        <ReactCompareSliderImage
-                          alt="Before"
-                          src={property.imgSrcBefore} 
-                          style={{ 
-                            width: "100%", height: "auto" 
-
-                          }}
-                          
-                        />
-                      }
-                      itemTwo={
-                        <ReactCompareSliderImage
-                          alt="After"
-                          src={property.imgSrcAfter}
-                          style={{
-                            width: "100%",
-                            height: "auto",
-                            filter: 'saturate(1.25) contrast(1.1) drop-shadow(2px 4px 6px black)',
-                            
-                          }}
-                         
-                        />
-                      }
-                      keyboardIncrement="5%"
-                      position={50}
-                      style={{
-                        width: '100%',
-                        height: '167px', // Set a fixed height for the slider
-                        objectFit: 'cover', // Ensure images cover the container properly
-                        zIndex: 1, // Ensure the slider is below the content
-                      }}
+                <ReactCompareSlider
+                  boundsPadding={0}
+                  clip="both"
+                  itemOne={
+                    <ReactCompareSliderImage
+                      alt="Before"
+                      src={property.imgSrcBefore} 
+                      style={{ width: "100%", height: "auto" }}
                     />
-                  </div>
-                ) : (
-                  <Image
-                    src={property.imgSrc}
-                    alt={property.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                )}
+                  }
+                  itemTwo={
+                    <ReactCompareSliderImage
+                      alt="After"
+                      src={property.imgSrcAfter}
+                      style={{ width: "100%", height: "auto", filter: 'saturate(1.25) contrast(1.1) drop-shadow(2px 4px 6px black)' }}
+                    />
+                  }
+                  keyboardIncrement="5%"
+                  position={50}
+                  style={{
+                    width: '100%',
+                    height: '167px',
+                    objectFit: 'cover',
+                    zIndex: 1,
+                  }}
+                />
               </div>
               <div className="absolute bottom-4 left-4 flex gap-2 z-10">
                 <span className="bg-white/80 text-black text-xs font-semibold px-2 py-1 rounded-full">
@@ -140,9 +333,7 @@ const Before_After = ({
                   onClick={onFavoriteToggle}
                 >
                   <Heart
-                    className={`w-5 h-5 ${
-                      isFavorite ? "text-red-500 fill-red-500" : "text-gray-600"
-                    }`}
+                    className={`w-5 h-5 ${isFavorite ? "text-red-500 fill-red-500" : "text-gray-600"}`}
                   />
                 </button>
               )}
@@ -191,6 +382,36 @@ const Before_After = ({
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Pagination: Affichage des numéros de page */}
+      <div className="flex justify-center items-center mt-6">
+        <button
+          onClick={prevPage}
+          disabled={currentPage === 1}
+          className="px-4 py-2 border rounded-lg mr-2 disabled:opacity-50"
+        >
+          {"<"}
+        </button>
+
+        {/* Affichage des numéros de page */}
+        {pageNumbers.map((number) => (
+          <button
+            key={number}
+            onClick={() => goToPage(number)}
+            className={`px-4 py-2 border rounded-lg mx-1 ${currentPage === number ? "bg-blue-500 text-white" : "bg-white"}`}
+          >
+            {number}
+          </button>
+        ))}
+
+        <button
+          onClick={nextPage}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 border rounded-lg ml-2 disabled:opacity-50"
+        >
+          {">"}
+        </button>
       </div>
     </section>
   );
